@@ -272,11 +272,11 @@ class AnimatedRepeatable extends StatefulWidget {
   /// Creates a transition builder specifically
   /// designed for creating a shimmering effect.
   ///
-  /// **[colors]** (required, List<Color>) : A list of colors
+  /// **[colors]** (required, `List<Color>`) : A list of colors
   /// used to create the shimmering effect. The animation cycles
   /// through these colors to produce the shimmer.
   ///
-  /// **[stops]** (optional, List<double>) : A list of values between 0.0 and 1.0
+  /// **[stops]** (optional, `List<double>`) : A list of values between 0.0 and 1.0
   /// that specify the position of each color within the gradient. If omitted,
   /// colors will be spread evenly.
   ///
