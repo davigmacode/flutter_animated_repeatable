@@ -646,4 +646,109 @@ void main() {
       expect(key.currentState?.controller.status, AnimationStatus.reverse);
     });
   });
+
+  group('Accessibility (Reduced Motion)', () {
+    testWidgets(
+        'renders child directly when disableAnimations is explicitly true',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: AnimatedRepeatable(
+            disableAnimations: true,
+            child: Text('Static Child'),
+          ),
+        ),
+      );
+
+      expect(find.text('Static Child'), findsOneWidget);
+      expect(find.byType(FadeTransition), findsNothing);
+    });
+
+    testWidgets(
+        'renders child directly when MediaQuery has disableAnimations true',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: AnimatedRepeatable(
+              child: Text('Static Child'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Static Child'), findsOneWidget);
+      expect(find.byType(FadeTransition), findsNothing);
+    });
+  });
+
+  group('Widget Extensions Tests', () {
+    testWidgets('animateRepeatable extension wraps widget properly',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Target').animateRepeatable(
+            transition: AnimatedRepeatable.spin,
+          ),
+        ),
+      );
+
+      expect(find.text('Target'), findsOneWidget);
+      expect(find.byType(RotationTransition), findsOneWidget);
+    });
+
+    testWidgets('convenience extension methods work as expected',
+        (WidgetTester tester) async {
+      // repeatFade
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Fade').repeatFade(),
+        ),
+      );
+      expect(find.byType(FadeTransition), findsOneWidget);
+
+      // repeatSpin
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Spin').repeatSpin(),
+        ),
+      );
+      expect(find.byType(RotationTransition), findsOneWidget);
+
+      // repeatZoom
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Zoom').repeatZoom(),
+        ),
+      );
+      expect(find.byType(ScaleTransition), findsOneWidget);
+
+      // repeatShake
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Shake').repeatShake(),
+        ),
+      );
+      expect(find.byType(Transform), findsWidgets);
+
+      // repeatShimmer
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: const Text('Shimmer').repeatShimmer(
+            colors: [Colors.black, Colors.white],
+          ),
+        ),
+      );
+      expect(find.byType(ShaderMask), findsOneWidget);
+    });
+  });
 }
