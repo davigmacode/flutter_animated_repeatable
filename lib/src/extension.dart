@@ -150,6 +150,8 @@ extension AnimatedRepeatableWidgetExtension on Widget {
     TileMode tileMode = TileMode.clamp,
     AxisDirection direction = AxisDirection.right,
     BlendMode blendMode = BlendMode.srcATop,
+    double from = -1.0,
+    double to = 1.0,
     Duration duration = const Duration(milliseconds: 200),
     Curve curve = Curves.linear,
     bool? disableAnimations,
@@ -167,6 +169,8 @@ extension AnimatedRepeatableWidgetExtension on Widget {
         tileMode: tileMode,
         direction: direction,
         blendMode: blendMode,
+        from: from,
+        to: to,
       ),
       disableAnimations: disableAnimations,
     );

@@ -297,6 +297,11 @@ class AnimatedRepeatable extends StatefulWidget {
   /// **[blendMode]** (optional, BlendMode) : Determines how the shimmer gradient
   /// is blended with the child widget. Defaults to BlendMode.srcATop,
   /// which places the source color over the destination color.
+  /// **[from]** (optional, double) : The starting offset multiplier relative to the bounds.
+  /// Defaults to `-1.0` (starts completely outside the entry edge).
+  ///
+  /// **[to]** (optional, double) : The ending offset multiplier relative to the bounds.
+  /// Defaults to `1.0` (exits completely outside the exit edge).
   static AnimatedRepeatableBuilder shimmer({
     required List<Color> colors,
     List<double>? stops,
@@ -305,6 +310,8 @@ class AnimatedRepeatable extends StatefulWidget {
     TileMode tileMode = TileMode.clamp,
     AxisDirection direction = AxisDirection.right,
     BlendMode blendMode = BlendMode.srcATop,
+    double from = -1.0,
+    double to = 1.0,
   }) {
     return (child, final state) {
       return AnimatedBuilder(
@@ -319,6 +326,8 @@ class AnimatedRepeatable extends StatefulWidget {
             transform: GradientSlide(
               direction: direction,
               progress: state.animation.value,
+              from: from,
+              to: to,
             ),
           );
           return ShaderMask(

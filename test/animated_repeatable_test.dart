@@ -4,44 +4,105 @@ import 'package:animated_repeatable/animated_repeatable.dart';
 
 void main() {
   group('GradientSlide Tests', () {
-    test('transforms correctly for all axis directions', () {
+    test(
+        'transforms correctly for all axis directions with default and custom ranges',
+        () {
       const bounds = Rect.fromLTWH(0, 0, 100, 60);
 
-      // Right
+      // Right (default from: -1.0, to: 1.0)
       const slideRight = GradientSlide(
         direction: AxisDirection.right,
         progress: 0.5,
       );
       final matRight = slideRight.transform(bounds);
-      expect(matRight?.getTranslation().x, 50.0);
+      expect(matRight?.getTranslation().x, 0.0);
       expect(matRight?.getTranslation().y, 0.0);
 
-      // Left
+      // Right at start (progress: 0.0 -> starts outside left: -100)
+      const slideRightStart = GradientSlide(
+        direction: AxisDirection.right,
+        progress: 0.0,
+      );
+      expect(slideRightStart.transform(bounds)?.getTranslation().x, -100.0);
+
+      // Right at end (progress: 1.0 -> exits outside right: +100)
+      const slideRightEnd = GradientSlide(
+        direction: AxisDirection.right,
+        progress: 1.0,
+      );
+      expect(slideRightEnd.transform(bounds)?.getTranslation().x, 100.0);
+
+      // Left (starts at +100, ends at -100)
       const slideLeft = GradientSlide(
         direction: AxisDirection.left,
         progress: 0.5,
       );
       final matLeft = slideLeft.transform(bounds);
-      expect(matLeft?.getTranslation().x, -50.0);
+      expect(matLeft?.getTranslation().x, 0.0);
       expect(matLeft?.getTranslation().y, 0.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.left, progress: 0.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .x,
+          100.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.left, progress: 1.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .x,
+          -100.0);
 
-      // Down
+      // Down (starts at -60, ends at +60)
       const slideDown = GradientSlide(
         direction: AxisDirection.down,
         progress: 0.5,
       );
       final matDown = slideDown.transform(bounds);
       expect(matDown?.getTranslation().x, 0.0);
-      expect(matDown?.getTranslation().y, 30.0);
+      expect(matDown?.getTranslation().y, 0.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.down, progress: 0.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .y,
+          -60.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.down, progress: 1.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .y,
+          60.0);
 
-      // Up
+      // Up (starts at +60, ends at -60)
       const slideUp = GradientSlide(
         direction: AxisDirection.up,
         progress: 0.5,
       );
       final matUp = slideUp.transform(bounds);
       expect(matUp?.getTranslation().x, 0.0);
-      expect(matUp?.getTranslation().y, -30.0);
+      expect(matUp?.getTranslation().y, 0.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.up, progress: 0.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .y,
+          60.0);
+      expect(
+          const GradientSlide(direction: AxisDirection.up, progress: 1.0)
+              .transform(bounds)
+              ?.getTranslation()
+              .y,
+          -60.0);
+
+      // Custom from and to (e.g. 0.0 to 1.0)
+      const customSlide = GradientSlide(
+        direction: AxisDirection.right,
+        progress: 0.5,
+        from: 0.0,
+        to: 1.0,
+      );
+      expect(customSlide.transform(bounds)?.getTranslation().x, 50.0);
     });
   });
 
