@@ -87,6 +87,7 @@ class AnimatedRepeatable extends StatefulWidget {
     this.onCycle,
     this.onComplete,
     this.wrapper,
+    this.disableAnimations,
     required this.child,
   }) : assert(repeat >= -1);
 
@@ -187,6 +188,11 @@ class AnimatedRepeatable extends StatefulWidget {
   /// and current state (LoopAnimationStatus).
   final AnimatedRepeatableBuilder? wrapper;
 
+  /// Whether to disable animations, typically used to respect user accessibility
+  /// preferences or for testing. When `null` (default), it automatically respects
+  /// the system-wide reduced motion setting via [MediaQuery.maybeDisableAnimationsOf].
+  final bool? disableAnimations;
+
   /// The mandatory widget that will be animated during the transition.
   final Widget child;
 
@@ -194,7 +200,6 @@ class AnimatedRepeatable extends StatefulWidget {
   static const fade = _fade;
   static Widget _fade(Widget child, AnimatedRepeatableState state) {
     return FadeTransition(
-      key: ValueKey<Key?>(child.key),
       opacity: state.animation,
       child: child,
     );
@@ -204,7 +209,6 @@ class AnimatedRepeatable extends StatefulWidget {
   static const spin = _spin;
   static Widget _spin(Widget child, AnimatedRepeatableState state) {
     return RotationTransition(
-      key: ValueKey<Key?>(child.key),
       turns: state.animation,
       child: child,
     );
@@ -259,7 +263,6 @@ class AnimatedRepeatable extends StatefulWidget {
         end: to,
       );
       return ScaleTransition(
-        key: ValueKey(child.key),
         scale: tween.animate(state.animation),
         child: child,
       );
@@ -654,6 +657,13 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
 
   @override
   Widget build(BuildContext context) {
+    final bool shouldDisable = widget.disableAnimations ??
+        (MediaQuery.maybeDisableAnimationsOf(context) ?? false);
+
+    if (shouldDisable) {
+      return widget.child;
+    }
+
     final child = widget.wrapper?.call(widget.child, this) ?? widget.child;
     return _transition(child, this);
   }
