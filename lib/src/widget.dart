@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'types.dart';
@@ -303,21 +304,27 @@ class AnimatedRepeatable extends StatefulWidget {
     BlendMode blendMode = BlendMode.srcATop,
   }) {
     return (child, final state) {
-      final gradient = LinearGradient(
-        colors: colors,
-        stops: stops,
-        begin: begin,
-        end: end,
-        tileMode: tileMode,
-        transform: GradientSlide(
-          direction: direction,
-          progress: state.animation.value,
-        ),
-      );
-      return ShaderMask(
-        blendMode: blendMode,
-        shaderCallback: (bounds) {
-          return gradient.createShader(bounds);
+      return AnimatedBuilder(
+        animation: state.animation,
+        builder: (context, child) {
+          final gradient = LinearGradient(
+            colors: colors,
+            stops: stops,
+            begin: begin,
+            end: end,
+            tileMode: tileMode,
+            transform: GradientSlide(
+              direction: direction,
+              progress: state.animation.value,
+            ),
+          );
+          return ShaderMask(
+            blendMode: blendMode,
+            shaderCallback: (bounds) {
+              return gradient.createShader(bounds);
+            },
+            child: child,
+          );
         },
         child: child,
       );
@@ -341,12 +348,18 @@ class AnimatedRepeatable extends StatefulWidget {
   }) {
     return (child, final state) {
       final isHorizontal = direction == Axis.horizontal;
-      final d = sin(state.animation.value * pi * distance) * distance;
-      return Transform.translate(
-        offset: Offset(
-          isHorizontal ? d : 0.0,
-          isHorizontal ? 0 : d,
-        ),
+      return AnimatedBuilder(
+        animation: state.animation,
+        builder: (context, child) {
+          final d = sin(state.animation.value * pi * distance) * distance;
+          return Transform.translate(
+            offset: Offset(
+              isHorizontal ? d : 0.0,
+              isHorizontal ? 0 : d,
+            ),
+            child: child,
+          );
+        },
         child: child,
       );
     };
@@ -381,6 +394,12 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
 
   /// The [Animation] that is driven by the [AnimationController].
   late Animation<double> animation;
+
+  /// Internal curved animation reference to properly dispose.
+  CurvedAnimation? _curvedAnimation;
+
+  /// Timer used to handle delays gracefully and cancel them when paused/disposed.
+  Timer? _delayTimer;
 
   /// The effective transition builder should use.
   AnimatedRepeatableBuilder get _transition {
@@ -435,9 +454,11 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
     if (widget.pause) return pause();
 
     if (isInitialized) {
-      widget.onContinue?.call();
+      if (isIdle) {
+        widget.onContinue?.call();
+      }
       if (!widget.continuity) {
-        controller.forward(from: 0);
+        _forwardAnimation(from: 0);
         return;
       }
     } else {
@@ -447,37 +468,44 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
 
     // Resume the animation
     if (controller.status == AnimationStatus.reverse) {
-      controller.reverse();
+      _backwardAnimation();
     } else {
-      controller.forward();
+      _forwardAnimation();
     }
   }
 
   /// Pauses the animation playback.
   void pause() {
+    _delayTimer?.cancel();
+    _delayTimer = null;
     controller.stop();
     if (isInitialized && !isCompleted) widget.onPause?.call();
   }
 
   /// Connects curve with the controller and plays the animation
-  void _initAnimation() {
+  void _initAnimation({bool autoPlay = true}) {
+    _curvedAnimation?.dispose();
+    _curvedAnimation = CurvedAnimation(
+      parent: controller,
+      curve: widget.curve,
+      reverseCurve: widget.reverseCurve,
+    );
+
     final tween = widget.reverse
         ? Tween<double>(begin: 1, end: 0)
         : Tween<double>(begin: 0, end: 1);
-    animation = tween.animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: widget.curve,
-        reverseCurve: widget.reverseCurve,
-      ),
-    );
+    animation = tween.animate(_curvedAnimation!);
 
-    // Plays the animation or resumes it from a paused state.
-    play();
+    // Plays the animation or resumes it from a paused state if autoPlay is requested.
+    if (autoPlay) {
+      play();
+    }
   }
 
   /// Reset animation to the initial state
   void _resetAnimation() {
+    _delayTimer?.cancel();
+    _delayTimer = null;
     cycle = 0;
     isInitialized = false;
     isCompleted = false;
@@ -485,17 +513,40 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
   }
 
   /// Move forward
-  void _forwardAnimation({double? from}) async {
-    await Future.delayed(widget.delay);
-    if (!mounted) return;
-    controller.forward(from: from);
+  void _forwardAnimation({double? from}) {
+    _delayTimer?.cancel();
+    _delayTimer = null;
+
+    if (from != null) {
+      controller.value = from;
+    }
+
+    if (widget.delay > Duration.zero && controller.value == 0.0) {
+      _delayTimer = Timer(widget.delay, () {
+        if (!mounted || widget.pause) return;
+        controller.forward(from: from);
+      });
+    } else {
+      if (widget.pause) return;
+      controller.forward(from: from);
+    }
   }
 
   /// Move backward
-  void _backwardAnimation() async {
-    await Future.delayed(widget.reverseDelay ?? widget.delay);
-    if (!mounted) return;
-    controller.reverse();
+  void _backwardAnimation() {
+    _delayTimer?.cancel();
+    _delayTimer = null;
+
+    final delay = widget.reverseDelay ?? widget.delay;
+    if (delay > Duration.zero && controller.value == 1.0) {
+      _delayTimer = Timer(delay, () {
+        if (!mounted || widget.pause) return;
+        controller.reverse();
+      });
+    } else {
+      if (widget.pause) return;
+      controller.reverse();
+    }
   }
 
   /// End the animation
@@ -513,31 +564,20 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
     return false;
   }
 
-  /// Handle mirror animation events
-  void _handleMirror() async {
-    if (controller.isCompleted) {
-      _backwardAnimation();
-    }
-    if (controller.isDismissed && isInitialized) {
-      if (_endAnimation()) return;
-      _forwardAnimation();
-    }
-  }
-
-  /// Handle straight animation events
-  void _handleStraight() async {
-    if (controller.isCompleted) {
-      if (_endAnimation()) return;
-      _forwardAnimation(from: 0);
-    }
-  }
-
-  /// Handle the animation events
-  void _handleEvents() async {
+  /// Handle animation status changes
+  void _handleStatus(AnimationStatus status) {
     if (isMirror) {
-      _handleMirror();
+      if (status == AnimationStatus.completed) {
+        _backwardAnimation();
+      } else if (status == AnimationStatus.dismissed && isInitialized) {
+        if (_endAnimation()) return;
+        _forwardAnimation();
+      }
     } else {
-      _handleStraight();
+      if (status == AnimationStatus.completed) {
+        if (_endAnimation()) return;
+        _forwardAnimation(from: 0);
+      }
     }
     setState(() {});
   }
@@ -553,12 +593,12 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
   void initState() {
     super.initState();
 
-    // Create controller and register the events handler
+    // Create controller and register the status listener
     controller = AnimationController(
       duration: widget.duration,
       reverseDuration: widget.reverseDuration,
       vsync: this,
-    )..addListener(_handleEvents);
+    )..addStatusListener(_handleStatus);
 
     // Initiate the animation
     _initAnimation();
@@ -566,31 +606,48 @@ class AnimatedRepeatableState extends State<AnimatedRepeatable>
 
   @override
   void didUpdateWidget(AnimatedRepeatable oldWidget) {
-    if (!mounted) {
-      super.didUpdateWidget(oldWidget);
-      return;
-    }
+    super.didUpdateWidget(oldWidget);
+    if (!mounted) return;
 
     // Duration might have changed, so update the [AnimationController]
-    controller.duration = widget.duration;
-    controller.reverseDuration = widget.reverseDuration;
-
-    // Restart the animation when certain prop changed
-    if (widget.repeat != oldWidget.repeat ||
-        widget.continuity != oldWidget.continuity ||
-        widget.mirror != oldWidget.mirror ||
-        widget.reverse != oldWidget.reverse) {
-      _resetAnimation();
+    if (widget.duration != oldWidget.duration) {
+      controller.duration = widget.duration;
+    }
+    if (widget.reverseDuration != oldWidget.reverseDuration) {
+      controller.reverseDuration = widget.reverseDuration;
     }
 
-    // Initiate the animation.
-    _initAnimation();
+    final bool curveChanged = widget.curve != oldWidget.curve ||
+        widget.reverseCurve != oldWidget.reverseCurve ||
+        widget.reverse != oldWidget.reverse;
 
-    super.didUpdateWidget(oldWidget);
+    if (curveChanged) {
+      _initAnimation(autoPlay: false);
+    }
+
+    final bool resetNeeded = widget.repeat != oldWidget.repeat ||
+        widget.continuity != oldWidget.continuity ||
+        widget.mirror != oldWidget.mirror;
+
+    if (resetNeeded) {
+      _resetAnimation();
+      if (!widget.pause) {
+        play();
+      }
+    } else if (widget.pause != oldWidget.pause) {
+      if (widget.pause) {
+        pause();
+      } else {
+        play();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
+    _delayTimer = null;
+    _curvedAnimation?.dispose();
     controller.dispose();
     super.dispose();
   }
