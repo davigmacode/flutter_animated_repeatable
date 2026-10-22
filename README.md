@@ -1,6 +1,6 @@
 [![Pub Version](https://img.shields.io/pub/v/animated_repeatable)](https://pub.dev/packages/animated_repeatable) ![GitHub](https://img.shields.io/github/license/davigmacode/flutter_animated_repeatable) [![GitHub](https://badgen.net/badge/icon/buymeacoffee?icon=buymeacoffee&color=yellow&label)](https://www.buymeacoffee.com/davigmacode) [![GitHub](https://badgen.net/badge/icon/ko-fi?icon=kofi&color=red&label)](https://ko-fi.com/davigmacode)
 
-The `animated_repeatable` package offers a versatile widget called `AnimatedRepeatable` that allows you to apply repeatable animated transitions to a child widget. These transitions cycle through a specified number of times, creating dynamic effects within your UI.
+The `animated_repeatable` package offers a versatile widget called `AnimatedRepeatable` (and convenient Widget extensions) that allows you to apply repeatable animated transitions to a child widget. These transitions cycle through a specified number of times, creating dynamic effects within your UI.
 
 [![Preview](https://github.com/davigmacode/flutter_animated_repeatable/raw/main/media/preview.gif)](https://davigmacode.github.io/flutter_animated_repeatable)
 
@@ -8,30 +8,32 @@ The `animated_repeatable` package offers a versatile widget called `AnimatedRepe
 
 ## Features
 
-* Applies repeatable animated transitions to a child widget.
-* Offers various built-in transition functions (`fade`, `spin`, `slide`, `zoom`, `shimmer`).
-* Allows customization of transitions using the AnimatedRepeatableTransitionBuilder.
-* Supports pausing and resuming playback using the pause property.
-* Provides control over animation behavior with properties like:
-  * `repeat`: Number of times to repeat the animation loop (-1 for infinite)
+* Applies repeatable animated transitions to any child widget.
+* Offers various built-in transition functions (`fade`, `spin`, `slide`, `zoom`, `shimmer`, `shakeX`, `shakeY`).
+* Convenient **Widget Extension methods** (`animateRepeatable`, `repeatFade`, `repeatSpin`, `repeatZoom`, `repeatShake`, `repeatShimmer`) for fluent chaining.
+* Allows customization of transitions using `AnimatedRepeatableBuilder`.
+* Supports pausing and resuming playback using the `pause` property or programmatically (`play()`, `pause()`).
+* Provides fine-grained animation control:
+  * `repeat`: Number of times to repeat the animation loop (`-1` for infinite, `0` for 1 cycle).
   * `pause`: Whether to pause the animation.
-  * `continuity`: Controls whether the animation should maintain continuity when paused.
+  * `continuity`: Controls whether the animation should maintain continuity when resumed from paused state.
   * `mirror`: Whether the animation should play forward, then backward in a mirroring effect.
-  * `reverse`: Controls the initial animation direction (forward or backward)
-  * `transition`: The AnimatedRepeatableBuilder function that defines the animation behavior.
+  * `reverse`: Controls the initial animation direction (forward or backward).
+  * `transition`: The `AnimatedRepeatableBuilder` function that defines the animation behavior.
   * `curve`: The animation curve that controls the easing of the animation.
-  * `delay`: Delay before the animation starts.
+  * `delay`: Delay before the animation starts or between cycles.
   * `duration`: Animation duration for each direction (forward and backward if applicable).
   * `reverseTransition`: The transition applied for the backward direction (in mirroring).
   * `reverseCurve`: The curve to use in the backward direction (in mirroring effect).
-  * `reverseDelay`: Delay before starting the backward animation (in mirroring effect)
-  * `reverseDuration`: Optional duration for the backward animation (mirroring effect)
+  * `reverseDelay`: Delay before starting the backward animation (in mirroring effect).
+  * `reverseDuration`: Optional duration for the backward animation (mirroring effect).
+  * `disableAnimations`: Accessibility option to disable animations; automatically respects system-wide reduced motion settings via `MediaQuery.maybeDisableAnimationsOf`.
 * Triggers callbacks at various animation lifecycle stages:
   * `onStart`: Called only once at the very beginning of the first animation play-through.
   * `onPause`: Called whenever the animation is paused.
   * `onContinue`: Called whenever the animation is resumed after being paused.
-  * `onCycle`: Called every time the animation completes a single loop iteration (forward and potentially backward if reverse is true).
-  * `onComplete`: Called only once when all specified loops have finished playing (if repeat is not set to -1 for infinite loops).
+  * `onCycle`: Called every time the animation completes a single loop iteration.
+  * `onComplete`: Called only once when all specified loops have finished playing.
 
 ## Usage
 
@@ -42,26 +44,54 @@ To read more about classes and other references used by `animated_repeatable`, s
 import 'package:animated_repeatable/animated_repeatable.dart';
 ```
 
-### Create a repeatable transition widget
+### Fluent Widget Extensions (Recommended)
+You can chain repeatable animations directly on any widget:
+
+```dart
+// Repeating spin rotation
+const Icon(Icons.sync).repeatSpin(
+  duration: const Duration(seconds: 2),
+);
+
+// Smooth repeating shimmer
+const Text('Loading content...').repeatShimmer(
+  colors: [Colors.grey, Colors.white, Colors.grey],
+  duration: const Duration(milliseconds: 1200),
+);
+
+// Repeating zoom/pulse
+const Icon(Icons.favorite, color: Colors.red).repeatZoom(
+  from: 0.8,
+  to: 1.2,
+  mirror: true,
+  duration: const Duration(milliseconds: 600),
+);
+
+// General extension with full options
+myWidget.animateRepeatable(
+  repeat: 3,
+  mirror: true,
+  transition: AnimatedRepeatable.slide(const Offset(0.2, 0)),
+  duration: const Duration(milliseconds: 500),
+);
+```
+
+### Declarative Widget Usage
 ```dart
 AnimatedRepeatable(
   // Repeat the animation loop 3 times (in addition to the initial cycle)
   repeat: 3,
 
-  // Start the animation
+  // Start or pause the animation
   pause: false,
 
-  // When [pause] set to `true` then `false`, reset the animation to continue
-  continuity: false,
+  // When resumed from pause, whether to continue from current position or restart
+  continuity: true,
 
-  // Enable the mirror effect
+  // Enable the mirror effect (forward then backward)
   mirror: true,
 
-  // Play the animation in reverse initially (optional)
-  reverse: true,
-
-  // Built-in fade transition animation, you can use
-  // a custom AnimatedRepeatableBuilder for more complex animations
+  // Built-in fade transition animation
   transition: AnimatedRepeatable.fade,
 
   // Use a curve to ease the animation (optional)
@@ -70,7 +100,7 @@ AnimatedRepeatable(
   // Delay the animation start by 1 second
   delay: const Duration(seconds: 1),
 
-  // Set the animation duration to 500 milliseconds for each direction (forward and backward)
+  // Set the animation duration
   duration: const Duration(milliseconds: 500),
 
   // Use different transition for backward animation (optional)
@@ -92,7 +122,7 @@ AnimatedRepeatable(
   onCycle: (cycle) => debugPrint('Animation Cycle: $cycle'),
   onComplete: () => debugPrint('Animation Completed'),
 
-  // Allows chain effect
+  // Allows chaining effects based on completion
   wrapper: (child, state) {
     if (state.isCompleted) {
       return AnimatedRepeatable(
@@ -101,7 +131,6 @@ AnimatedRepeatable(
         transition: AnimatedRepeatable.shimmer(colors: [
           Colors.black87,
           Colors.blue,
-          Colors.black87,
           Colors.black87,
         ]),
         child: child,
@@ -118,33 +147,37 @@ AnimatedRepeatable(
 ```
 
 ### Built-in transitions
-The package provides various built-in transitions you can use directly:
+The package provides various built-in transitions ready to use:
 
-* `AnimatedRepeatable.fade`: Fades the child widget in and out during the animation cycle.
-* `AnimatedRepeatable.spin`: Rotates the child widget around a central point.
-* `AnimatedRepeatable.slide`: Slides the child widget to a specified position.
+* `AnimatedRepeatable.fade`: Fades the child widget in and out.
+* `AnimatedRepeatable.spin`: Rotates the child widget around its center.
+* `AnimatedRepeatable.slide`: Slides the child widget from/to specified offsets.
 * `AnimatedRepeatable.zoom`: Zooms the child widget in and out.
-* `AnimatedRepeatable.shimmer`: Creates a shimmering effect on the child widget.
+* `AnimatedRepeatable.shimmer`: Creates a seamless shimmering sweep across the child widget.
 * `AnimatedRepeatable.shakeX`: Shakes the child widget horizontally.
 * `AnimatedRepeatable.shakeY`: Shakes the child widget vertically.
+* `AnimatedRepeatable.shake`: Custom shake animation with configurable `direction` and `distance`.
 
 ### Custom transitions
-For more control, define your own transition functions using `AnimatedRepeatableBuilder`:
+For complete control, define your own transition functions using `AnimatedRepeatableBuilder`:
 
 ```dart
-final myCustomTransition = (child, animation) {
-  // Implement your custom animation logic here
-  return Container(child: child); // Wrap the child widget
+final myCustomTransition = (Widget child, AnimatedRepeatableState state) {
+  return FadeTransition(
+    opacity: state.animation,
+    child: child,
+  );
 };
 
 AnimatedRepeatable(
   transition: myCustomTransition,
-  child: MyWidget(),
-),
+  child: const MyWidget(),
+);
 ```
 
 ### Programmatic Play/Pause
-With this approach, you can control the animation playback (play/pause) of the AnimatedRepeatable widget from anywhere in your code using the globally accessible key.
+You can control the animation playback programmatically from anywhere using `GlobalKey<AnimatedRepeatableState>()` or `AnimatedRepeatable.of(context)`:
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:animated_repeatable/animated_repeatable.dart';
@@ -152,10 +185,12 @@ import 'package:animated_repeatable/animated_repeatable.dart';
 final repeatableKey = GlobalKey<AnimatedRepeatableState>();
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -202,6 +237,9 @@ class MyApp extends StatelessWidget {
   }
 }
 ```
+
+### Accessibility (Reduced Motion)
+`AnimatedRepeatable` automatically respects system-wide reduced motion accessibility settings via `MediaQuery.maybeDisableAnimationsOf(context)`. When animations are disabled, the child widget is rendered directly without unnecessary animation ticker overhead. You can also explicitly control this behavior via the `disableAnimations` parameter.
 
 ## Sponsoring
 
