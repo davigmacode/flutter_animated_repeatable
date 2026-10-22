@@ -1,6 +1,6 @@
 name: animated_repeatable
 description: Provides a way to create animated transitions on a child widget that repeat indefinitely or for a certain number of times.
-version: 1.1.3
+version: 1.2.0
 homepage: https://github.com/davigmacode/flutter_animated_repeatable
 
 topics:
