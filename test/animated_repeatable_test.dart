@@ -274,7 +274,8 @@ void main() {
       expect(completed, isTrue);
     });
 
-    testWidgets('mirror: true plays forward and backward across multiple cycles',
+    testWidgets(
+        'mirror: true plays forward and backward across multiple cycles',
         (WidgetTester tester) async {
       int cycles = 0;
       bool completed = false;
@@ -297,13 +298,15 @@ void main() {
 
       // Cycle 1 forward
       await tester.pump(const Duration(milliseconds: 105));
-      expect(find.byType(RotationTransition), findsOneWidget); // reverse transition active
+      expect(find.byType(RotationTransition),
+          findsOneWidget); // reverse transition active
 
       // Cycle 1 backward
       await tester.pump(const Duration(milliseconds: 55));
       expect(cycles, 1);
       expect(completed, isFalse);
-      expect(find.byType(FadeTransition), findsOneWidget); // back to forward transition
+      expect(find.byType(FadeTransition),
+          findsOneWidget); // back to forward transition
 
       // Cycle 2 forward
       await tester.pump(const Duration(milliseconds: 105));
@@ -503,14 +506,17 @@ void main() {
       }
 
       await tester.pumpWidget(buildWidget());
-      expect(key.currentState?.controller.duration, const Duration(milliseconds: 200));
+      expect(key.currentState?.controller.duration,
+          const Duration(milliseconds: 200));
 
       // 1. Update duration and reverseDuration
       duration = const Duration(milliseconds: 400);
       reverseDuration = const Duration(milliseconds: 250);
       await tester.pumpWidget(buildWidget());
-      expect(key.currentState?.controller.duration, const Duration(milliseconds: 400));
-      expect(key.currentState?.controller.reverseDuration, const Duration(milliseconds: 250));
+      expect(key.currentState?.controller.duration,
+          const Duration(milliseconds: 400));
+      expect(key.currentState?.controller.reverseDuration,
+          const Duration(milliseconds: 250));
 
       // 2. Update curve
       curve = Curves.easeIn;
@@ -534,7 +540,8 @@ void main() {
       expect(key.currentState?.isMirror, isTrue);
     });
 
-    testWidgets('parent rebuild does not falsely call onContinue or restart animation',
+    testWidgets(
+        'parent rebuild does not falsely call onContinue or restart animation',
         (WidgetTester tester) async {
       int continueCount = 0;
 
@@ -603,7 +610,8 @@ void main() {
       expect(find.text('Completed Wrapper'), findsOneWidget);
     });
 
-    testWidgets('pausing during reverse mirror and calling play resumes backward animation',
+    testWidgets(
+        'pausing during reverse mirror and calling play resumes backward animation',
         (WidgetTester tester) async {
       final key = GlobalKey<AnimatedRepeatableState>();
 
