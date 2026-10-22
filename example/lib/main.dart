@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:animated_repeatable/animated_repeatable.dart';
-import 'package:wx_text/wx_text.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,11 +31,12 @@ class MyHomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const WxText.displayMedium(
+            Text(
               'AnimatedRepeatable',
-              style: TextStyle(
-                letterSpacing: -3,
-              ),
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    letterSpacing: -2,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 50),
             Wrap(
