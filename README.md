@@ -1,3 +1,8 @@
+# animated_repeatable
+
+> [!IMPORTANT]
+> **Repository Moved to Monorepo**: Active development of `animated_repeatable` has migrated to the official [**davigmacode/flutter_wx**](https://github.com/davigmacode/flutter_wx) monorepo under [`packages/animated_repeatable`](https://github.com/davigmacode/flutter_wx/tree/main/packages/animated_repeatable).
+
 [![Pub Version](https://img.shields.io/pub/v/animated_repeatable)](https://pub.dev/packages/animated_repeatable) ![GitHub](https://img.shields.io/github/license/davigmacode/flutter_animated_repeatable) [![GitHub](https://badgen.net/badge/icon/buymeacoffee?icon=buymeacoffee&color=yellow&label)](https://www.buymeacoffee.com/davigmacode) [![GitHub](https://badgen.net/badge/icon/ko-fi?icon=kofi&color=red&label)](https://ko-fi.com/davigmacode)
 
 The `animated_repeatable` package offers a versatile widget called `AnimatedRepeatable` (and convenient Widget extensions) that allows you to apply repeatable animated transitions to a child widget. These transitions cycle through a specified number of times, creating dynamic effects within your UI.
